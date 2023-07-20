@@ -4,32 +4,19 @@ case $- in
       *) return;;
 esac
 
-function optsrc() {
-  while [ -n "$1" ]; do
-    [ -f "$1" ] && source "$1"
-    shift
-  done
-}
-
-function optpath() {
-  while [ -n "$1" ]; do
-    [ -d "$1" ] && PATH="$1:$PATH"
-    shift
-  done
-}
+X=`realpath "${BASH_SOURCE[0]}"` X=`dirname "$X"` X=`realpath "$X/../.."` DOT_ROOT=$X
+source $DOT_ROOT/res/bash/bash_include.sh
 
 HOST=`hostname -s`
 EMAIL="matt@hazelmollusk.org"
 DEBEMAIL="matt@hazelmollusk.org"
 DEBFULLNAME="Matt Barry"
 DEBNAME=$DEBFULLNAME
-
 export EMAIL DEBEMAIL DEBFULLNAME DEBNAME
-export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
-# PATH changes should go in bashrc
-optsrc ~/.bashrc
-optsrc ~/.bash_aliases
+source ~/.bashrc
+source ~/.bash_aliases
+# optsrc `ls -1 $DOT_ROOT/profile.d/*.sh`
 
 HISTCONTROL=ignoreboth
 HISTSIZE=1000
@@ -44,6 +31,8 @@ shopt -s checkwinsize
 # match all files and zero or more directories and subdirectories.
 shopt -s globstar
 
+export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+
 # make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
@@ -55,19 +44,18 @@ fi
 # put a basic xterm title up
 printf "\033]0;%s\007" "`whoami`@`hostname -s`"
 
-optsrc $HOME/.asdf/completions/asdf.bash
 if ! shopt -oq posix; then
   optsrc /usr/share/bash-completion/bash_completion
   optsrc /etc/bash_completion
   optsrc /opt/homebrew/etc/bash_completion
 fi
 
-optsrc ~/.dot/prompt.sh
+optsrc "$DOT_ROOT/res/bash/prompt.sh"
 
-optsrc ~/.dot/hosts/${HOST}.sh
-optsrc ~/.dot/hosts/${HOST}-prompt.sh
+# optsrc $HOME/.dot/hosts/${HOST}.sh
+# optsrc $HOME/.dot/hosts/${HOST}-prompt.sh
 
-optsrc ~/.bash_profile.local
+# optsrc $HOME/.bash_profile.local
 
 ##########
 fortune -s

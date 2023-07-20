@@ -1,6 +1,6 @@
-source ~/.dot/colors.sh
+source "$DOT_ROOT/res/bash/colors.sh"
 
-DIRCOLOR=$BLACK$BG2w
+DIRCOLOR="$BLACK$BG2"
 PIPECOLOR="$NORMAL\[\033[02;${PCOLOR}m\]"
 HOSTCOLOR="\[\033[${HCOLOR}m\]"
 HOSTCOLORDIM="\[\033[02;${HCOLOR}m\]"
@@ -15,18 +15,10 @@ function prompt_pre() {
   if [[ ! $GIT_STATUS =~ fatal ]]; then
       GIT[NAME]=`git config --get remote.origin.url | sed -e 's/^.*\/\([^/.]*\).*/\1/' 2>&1`
       GIT[BRANCH]=`git branch --show-current 2>&1`
-      if [[ $GIT_STATUS =~ behind ]]; then
-        GIT[BEHIND]="»"
-      fi
-      if [[ $GIT_STATUS =~ ahead ]]; then
-        GIT[AHEAD]="«"
-      fi
-      if [[ $GIT_STATUS =~ ^\?\? ]]; then
-        GIT[UNTRACKED]="?"
-      fi
-      if [[ $GIT_STATUS =~ ^\ M ]]; then
-        GIT[MODIFIED]="¤"
-      fi
+      if [[ $GIT_STATUS =~ behind ]]; then GIT[BEHIND]="»";     fi
+      if [[ $GIT_STATUS =~ ahead  ]]; then GIT[AHEAD]="«";      fi
+      if [[ $GIT_STATUS =~ \?\?   ]]; then GIT[UNTRACKED]="?";  fi
+      if [[ $GIT_STATUS =~ \ M\   ]]; then GIT[MODIFIED]="¤";   fi
   fi
   DDATE=`ddate +%A 2>/dev/null || date +%A 2>/dev/null`
   TIME=`date +%I%M`
@@ -34,18 +26,17 @@ function prompt_pre() {
   PS1="\033]0;$USER@$HOST: ${DISPLAY_PATH} | ${GIT[ORIGIN]} ${GIT[BRANCH]:+(${GIT[BRANCH]})} ${GIT[UNTRACKED]:+\?}${GIT[MODIFIED]:+*}\007\
 $NORMAL$DIM${CYAN}▄\
 $BOLD$WHITE$BLUEBG\
-$SPACE2$DDATE${SPACE}$DIM${CYAN}│$SPACE$NORMAL$WHITE$BLUEBG$TIME$SPACE2\
+$SPACE2$DDATE${SPACE}${DIM}${CYAN}│$SPACE$NORMAL$WHITE$BLUEBG$TIME$SPACE2\
 ${NORMAL}${LIGHT}${CYAN}${BLUEBG}▒░\
 ${debian_chroot:+($debian_chroot) }\
 ${VIRTUAL_ENV:+($(basename $VIRTUAL_ENV)) }\
-${CYAN}${BLUEBG}\
+${NORMAL}${BOLD}${BLACK}${BLUEBG}\
 $SPACE\u\
-${BLUE}${CYANBG}\
+${NORMAL}${BOLD}${BLACK}${CYANBG}\
 \h$SPACE\
 ${NORMAL}${CYAN}▒░\
 $NORMAL$SPACE${GIT[NAME]}$BOLD$DIM$CYAN ■ $NORMAL$BOLD$WHITE${GIT[BRANCH]}\
-$SPACE\
-$BOLD$YELLOW${GIT[MODIFIED]}\
+$SPACE$BOLD$YELLOW${GIT[MODIFIED]}\
 $BOLD$RED${GIT[UNTRACKED]}\
 $BOLD$DIM$BLUE${GIT[BEHIND]}\
 $BOLD$DIM$GREEN${GIT[AHEAD]}\
