@@ -7,18 +7,20 @@ from argparse import ArgumentParser
 from contextlib import chdir, contextmanager
 from hashlib import md5
 
-### default constants ###
+
+######################## default constants ##############
 INSTALL_METHOD="git"
 GIT_ORIGIN="https://github.com/hazelmollusk/dot"
 # GIT_PATTERN="\/dot(\.git)?\$"
-GIT_PATTERN="dot"
+GIT_PATTERN='\\/dot\\.git\\$'
 LOG_LEVEL=logging.WARN
 for arg in sys.argv:
   if re.search('--?[a-z]*v', arg):
     LOG_LEVEL=logging.DEBUG
-CONFIG_PATH='~/.dotrc'
-UI_ARG_COUNT = 1
+CONFIG_PATH=f'~/.dot.json'
+# UI_ARG_COUNT = 1
 PROGNAME='dotctl'
+
 
 # executes `command` and returns output on success, or False on error
 def command_output(command):
@@ -70,12 +72,13 @@ class ColorFormatter(logging.Formatter):
     format = "%(asctime)s - %(levelname)s - %(message)s"
     format_suffix = " (%(filename)s:%(lineno)d)"
 
+    suffix = format + reset + grey + format_suffix + reset
     FORMATS = {
-        logging.DEBUG: indigo + format + reset + grey + format_suffix + reset,
-        logging.INFO: green + format + reset + grey + format_suffix + reset,
-        logging.WARNING: yellow + format + reset + grey + format_suffix + reset,
-        logging.ERROR: red + format + reset + grey + format_suffix + reset,
-        logging.CRITICAL: bold_red + format + reset + grey + format_suffix + reset
+        logging.DEBUG: indigo + suffix,
+        logging.INFO: green + suffix,
+        logging.WARNING: yellow + suffix,
+        logging.ERROR: red + suffix,
+        logging.CRITICAL: bold_red + suffix
     }
 
     def format(self, record):
@@ -150,10 +153,11 @@ class Git(Rooted):
         raise RuntimeError
 
 ############################# Adapter ############
-class Adapter:
+class Adapter(Rooted):
   
   def __init__(self, dot):
     self.dot = dot
+    super().__init__(dot.path / 'adapters' / self.name)
 
   @property
   def name(self): 
@@ -310,7 +314,7 @@ class Dot(Rooted):
       warning('install: invalid INSTALL_METHOD!')
       raise RuntimeWarning('invalid install method!')
 
-  def load_config(self, filename=None):
+  def load_config(self, filename=None, style=None):
     config_path = Path(filename or CONFIG_PATH).expanduser()
     config_vars = {}
     if config_path.exists():
