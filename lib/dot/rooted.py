@@ -9,6 +9,8 @@ class Rooted:
       self.path = path
     elif path is not None:
       raise RuntimeError(f'illegal path: {path}')
+    else:
+      self.path = None
 
   @property
   def path(self): return self._path

@@ -1,40 +1,41 @@
-import sys, os, subprocess, re, logging, curses
+import sys, re
 from pathlib import Path
-from logging import debug, info, warning, error, critical
+from enum import Enum, auto, nonmember
+from logging import (
+    debug, info, warning, error, critical,
+    WARN, DEBUG, getLogger, StreamHandler
+)
 from argparse import ArgumentParser
-from contextlib import chdir, contextmanager
-from hashlib import md5
+from functools import cache
 from .rooted import Rooted
+from .config import Configured
 from .git import Git
-from .util import ColorFormatter, PROGNAME, command_output
+from .util import PROGNAME, command_output
 from .adapter import Adapter
+from .log.color_formatter import ColorFormatter
+from .dotui import DotUI  
+from .install import Install
 
-######################## default constants ##############
-INSTALL_METHOD="git"
-GIT_ORIGIN="https://github.com/hazelmollusk/dot"
-# GIT_PATTERN="\/dot(\.git)?\$"
-GIT_PATTERN='\\/dot\\.git\\$'
-LOG_LEVEL=logging.WARN
+#################### default constants ##############
+CONFIG_PATH=f'~/.dot'
+LOG_LEVEL=WARN
 for arg in sys.argv:
   if re.search('--?[a-z]*v', arg):
-    LOG_LEVEL=logging.DEBUG
-CONFIG_PATH=f'~/.dot.json'
-# UI_ARG_COUNT = 1
-from .log import ColorFormatter
+    LOG_LEVEL=DEBUG
 
 
-
-class Dot(Rooted):
-    
+class Dot(Configured, Git):
+  
   def __init__(self, params=None, path=None):
     self.params = params
     self.path = path
+    self.install = Install(self)
 
   def setup_logging(self, level=LOG_LEVEL):
     if not level: level = LOG_LEVEL
-    logger = logging.getLogger()
+    logger = getLogger()
     logger.setLevel(level)
-    ch = logging.StreamHandler()
+    ch = StreamHandler()
     ch.setLevel(level)
     ch.setFormatter(ColorFormatter())
     logger.addHandler(ch)
@@ -43,51 +44,42 @@ class Dot(Rooted):
     self.setup_logging(LOG_LEVEL)
     try:
       self.args = self.parse_args()
-      self.config = self.load_config(self.args.config or CONFIG_PATH)
-      self.path = self.detect_root()
-      self.run() if ((len(sys.argv) < (3 if self.args.verbose else 2)) \
-                     and not self.args.menu) else self.run_ui() 
+      self.path = self.args.config or CONFIG_PATH
+      self.install.detect()
+      self.run()
     except Exception as e:
       critical('exception encountered, exiting..')
-      if logging.getLogger().level == logging.DEBUG: 
+      if getLogger().level == DEBUG: 
         raise e
       else:
         warning(f'error: {str(e)}')
 
   @property
-  def git(self):
-    return Git(self.path)
-
-  @property
-  def home(self):
-    return Path.home()
-
-  @property
+  @cache
   def adapters(self):
     self.config.setdefault('adapters', [ a.name for a in Adapter.__subclasses__() ])
-    if isinstance(self.config['adapters'], str):
-      self.config['adapters'] = self.config['adapters'].split()
-    # TODO: memoize?
     return [ cls(self) for cls in Adapter.__subclasses__() \
             if cls.name in self.config['adapters']]
 
   def detect_root(self):
     if self.args.root: 
-      self.path = self.args.root
-      return self.path
-    run_path = Path('.')
-    try: run_path = Path(__file__).parent
-    except NameError: pass
-    debug(f'detect: initial run path -> {run_path}')
-    debug(f'detect: real run path -> {run_path.absolute()}')
+      run_path = Path(self.args.root)
+      debug(f'detect: root set -> {run_path}')
+    else:
+      run_path = Path(__file__).parent
+      debug(f'detect: initial run path -> {run_path}')
     git = Git(run_path)
     if git.root:
+      debug(f'detect: git repo at {git.root}')
       for name, url in git.remotes.items():
         debug(f'detect: remote {name} -> {url}')
         if re.search(GIT_PATTERN, url):
+          self.install_type = Dot.Install.GIT
           info(f'detect: found at {git.root}')
           return git.root
-    elif (run_path.parent / 'bin' / 'dotctl').exists():
+      warning(f'detect: no valid remote found!')
+    elif (run_path.parent/'lib'/'dot'/'__init__.py').exists():
+      self.install_type = Dot.Install.NORMAL
       return run_path.parent
     else:
       info('no installation detected')
@@ -100,23 +92,19 @@ class Dot(Rooted):
       for adapter in self.adapters:
         adapter.install()
 
-  def install(self, path=None, create=False):
-    if INSTALL_METHOD=='git':
-      if path: self.path = path
-      if not self.path: self.path = Path.home() / '.dot'
-      debug(f'install: root -> {self.path}')
-      if not self.git.root:
-        if not create:
-          warning('install: refusing to create new install!')
-          raise RuntimeWarning('refusing to create new install!')
-        info(f'install: not detected at {self.path}, cloning from {GIT_ORIGIN}')
-        self.git.create(GIT_ORIGIN, self.path)
-      else: 
-        info(f'install: updating install at {self.path}')
-        self.git.update()
-    else:
-      warning('install: invalid INSTALL_METHOD!')
-      raise RuntimeWarning('invalid install method!')
+  # def install(self, path=None, create=False):
+  #   if path: self.path = path
+  #   if not self.path: self.path = Path.home() / '.dot'
+  #   debug(f'install: root -> {self.path}')
+  #   if not self.git.root:
+  #     if not create:
+  #       warning('install: refusing to create new install!')
+  #       raise RuntimeWarning('refusing to create new install!')
+  #     info(f'install: not detected at {self.path}, cloning from {GIT_ORIGIN}')
+  #     self.git.create(GIT_ORIGIN, self.path)
+  #   else: 
+  #     info(f'install: updating install at {self.path}')
+  #     #self.git.update()
 
   def load_config(self, filename=None, style=None):
     config_path = Path(filename or CONFIG_PATH).expanduser()
@@ -140,10 +128,10 @@ class Dot(Rooted):
     parser.add_argument('-v', '--verbose', action='store_true', 
                         help='show debugging output')
     parser.add_argument('-c', '--config', type=str,
-                        help='config file location')
+                        help='root config path')
     parser.add_argument('-m', '--menu', action='store_true',
                         help='show menu interface')
     return parser.parse_args(params)
   
   def run_ui(self):
-    curses.wrapper(DotUI(self).main())
+    DotUI(self).main()

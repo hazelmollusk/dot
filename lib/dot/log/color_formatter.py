@@ -2,7 +2,7 @@ import logging
 
 class ColorFormatter(logging.Formatter):
 
-    grey = "\x1b[38;20m"
+    grey = "\x1b[38;21m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
     indigo = "\x1b[34;20m"

@@ -7,8 +7,9 @@ from hashlib import md5
 
 from .rooted import Rooted
 from .util import command_output, file_hash
+from .config import Configured
 
-class Adapter(Rooted):
+class Adapter(Configured):
   
   def __init__(self, dot):
     self.dot = dot
@@ -27,19 +28,7 @@ class Adapter(Rooted):
     return None
     #raise NotImplementedError
     
-  def backup_file(self, filename):
-    file = Path(filename).expanduser()
-    if not file.exists(): 
-      warning(f'backup: file {file} not found!')
-      return True
-    h = file_hash(file)
-    bkf = Path(f'{filename}.bak.{h[0:8]}')
-    if bkf.exists():
-      warning(f'backup: backup file {bkf} already exists!')
-      file.unlink()
-      return bkf
-    debug(f'backup: {filename} -> {bkf}')
-    return file.rename(bkf)
+
   
   def install(self):
     debug(f'adapter({self.name}): installing')
