@@ -48,17 +48,21 @@ def file_hash(file):
 
 
 ########################### backup_file #####################
-def backup_file(self, filename):
+def backup_file(filename):
   from pathlib import Path
   file = Path(filename).expanduser()
+  bkf = None
   if not file.exists(): 
     warning(f'backup: file {file} not found!')
     return True
-  h = file_hash(file)
-  bkf = Path(f'{filename}.bak.{h[0:8]}')
-  if bkf.exists():
-    warning(f'backup: backup file {bkf} already exists!')
-    file.unlink()
-    return bkf
+  if file.is_dir():
+    c = 0
+    while (bkf := file.with_suffix(f'.bak.{c}')).exists(): c += 1
+  else:  
+    bkf = file.with_suffix(f'.bak.{file_hash(file)[0:8]}')
+    if bkf.exists():
+      warning(f'backup: backup file {bkf} already exists!')
+      file.unlink()
+      return bkf
   debug(f'backup: {filename} -> {bkf}')
   return file.rename(bkf)

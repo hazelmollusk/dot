@@ -7,3 +7,7 @@ class BashAdapter(Adapter):
   
   @property
   def links(self): return ['bashrc','bash_profile','bash_aliases']
+
+  @property
+  def user_dirs(self):
+    return 

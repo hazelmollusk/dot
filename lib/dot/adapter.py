@@ -14,6 +14,7 @@ class Adapter(Configured):
   def __init__(self, dot):
     self.dot = dot
     super().__init__(dot.path / 'adapters' / self.name)
+    debug(f'adapter {type(self)} - {self.path}')
 
   @property
   def name(self): 
@@ -25,10 +26,7 @@ class Adapter(Configured):
 
   @property
   def user_dirs(self):
-    return None
-    #raise NotImplementedError
-    
-
+    raise NotImplementedError
   
   def install(self):
     debug(f'adapter({self.name}): installing')
@@ -38,13 +36,12 @@ class Adapter(Configured):
     
   def create_user_dirs(self):
     changed = False
-    if not self.user_dirs: 
-      return changed
-    adapter_path = Path('~/.dot') / self.name
-    for path in [ adapter_path / p for p in self.user_dirs ]:
-      if not path.is_dir():
-        path.mkdir(parents=True)
-        changed = True
+    if self.user_dirs:   
+      for path in [ self.path / p for p in self.user_dirs ]:
+        if not path.is_dir():
+          path.mkdir(parents=True)
+          changed = True
+    return changed
 
   def install_link(self, link):
     src = self.dot.path / 'adapters' / self.name / link
