@@ -5,15 +5,16 @@ from logging import (
     WARN, DEBUG, getLogger, StreamHandler
 )
 from argparse import ArgumentParser
-from functools import cache
+from functools import cache, cached_property
 from .rooted import Rooted
-from .config import Configured
+from .configured import Configured
 from .git import Git
 from .util import PROGNAME, command_output
 from .adapter import Adapter
 from .log.color_formatter import ColorFormatter
 from .dotui import DotUI  
 from .install import Install
+from .runtime import Runtime
 
 
 #################### default constants ##############
@@ -26,11 +27,16 @@ for arg in sys.argv:
 
 
 class Dot(Configured, Git):
+
+  @property
+  def run(self): return Runtime(self)
   
+  @property
+  def install(self): return Install(self)
+    
   def __init__(self, path=None, params=None):
     self.params = params
-    self.path = path or USER_PATH
-    self.install = Install(self)
+    self.path = path or Path(USER_PATH).expanduser()
 
   def setup_logging(self, level=LOG_LEVEL):
     logger = getLogger()
@@ -43,48 +49,26 @@ class Dot(Configured, Git):
   def main(self):
     self.setup_logging(LOG_LEVEL)
     try:
-      self.args = self.parse_args()
+      self.args = self.run.parse_args()
       self.install.detect()
-      self.run()
     except Exception as e:
-      critical('exception encountered, exiting..')
+      critical(f'error: {str(e)}')
       if getLogger().level == DEBUG: 
         raise e
-      else:
-        error(f'error: {str(e)}')
 
-  @property
-  @cache
+  @cached_property
   def adapters(self):
     config = self.config
     config.setdefault('adapters', [ a.name for a in Adapter.__subclasses__() ])
-    debug(str(self.config))
-    debug(str(config))
-    return [ cls(self) for cls 
-                in Adapter.__subclasses__()
-                if cls.name in self.config['adapters'] ]
+    return [  cls(self) for cls 
+              in Adapter.__subclasses__()
+              if cls.name in self.config['adapters'] ]
   
-  def run(self):
+  def runit(self):
     debug('running non-interactively')
     if self.args.install:
+      
       if not self.install.is_valid():
         self.install.initialize(path=self.path) # TODO: install.mode arg
       for adapter in self.adapters:
         adapter.install()
-
-  def parse_args(self, params=None):
-    params = params or self.params or None
-    epilog = command_output('ddate') or 'Install `ddate`!'
-    parser = ArgumentParser(epilog=epilog)
-    parser.add_argument('-i', '--install', action='store_true', 
-                        help='install/update')
-    parser.add_argument('-r', '--root', type=str, 
-                        help='root install path')
-    parser.add_argument('-v', '--verbose', action='store_true', 
-                        help='show debugging output')
-    parser.add_argument('-m', '--menu', action='store_true',
-                        help='show menu interface')
-    return parser.parse_args(params)
-  
-  def run_ui(self):
-    DotUI(self).main()

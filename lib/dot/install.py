@@ -72,13 +72,13 @@ class Install(Rooted):
   def guess(self, path):
     # check if we are in a git checkout
     git = Git(path)
-    if git.root:
-      debug(f'detect: git repo at {git.root}')
+    if git.git_root:
+      debug(f'detect: git repo at {git.git_root}')
       for name, url in git.remotes.items():
         debug(f'detect: remote {name} -> {url}')
         if re.search(GIT_PATTERN, url):
           self.mode = Install.Mode.GIT
-          info(f'detect: found at {git.root}')
+          info(f'detect: found at {git.git_root}')
           self.path = path
           return True
       warning('inside a foreign git repository?')

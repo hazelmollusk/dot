@@ -12,7 +12,7 @@ from .util import command_output
 class Git(Rooted):
 
   @property
-  def root(self):
+  def git_root(self):
     if self.path:
       p = self.path
       while p.parents:
@@ -24,8 +24,8 @@ class Git(Rooted):
   @property
   def remotes(self):
     ret = {}
-    if self.root:
-      with chdir(self.root):
+    if self.git_root:
+      with chdir(self.git_root):
         for line in command_output('git remote -v').splitlines():
           name, url = line.split()[0:2]
           ret[name] = url
@@ -38,12 +38,12 @@ class Git(Rooted):
       raise RuntimeError
     debug(f'creating dir {self.path}')
     os.makedirs(self.path, exist_ok=True)
-    with chdir(self.path):
+    with chdir(self.path):      
       if not command_output(f'git {f"clone {url} {self.path}" if url else "init"}'):
         raise RuntimeError
 
   def update(self):
-    if not self.root:
+    if not self.git_root:
       raise RuntimeError('cannot update invalid repository!')
     with chdir(self.path):
       if not command_output(f'git pull --all'):
