@@ -56,10 +56,9 @@ class Runtime:
     return t
 
   def get_parser(self, obj=None, parser=None):
-    warn(('!!!!!!!!!!!','get_parser', obj, parser),)
     p = parser or ArgumentParser()
     o = obj or self.tree
-    inspect(o)
+    inspect(o, 'get_parser(OBJ, parser)')
 
     ############# add --options ###########
     options = o.get('_options', {})
