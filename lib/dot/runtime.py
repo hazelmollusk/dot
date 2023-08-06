@@ -1,8 +1,8 @@
 import sys
 from functools import cached_property, cache
 from argparse import ArgumentParser
-from logging import debug, info
-
+from logging import debug, info, warn, error
+from .util import inspect
 
 class Runtime:
 
@@ -56,32 +56,37 @@ class Runtime:
     return t
 
   def get_parser(self, obj=None, parser=None):
-    debug(('get_parser', obj, parser),)
+    warn(('!!!!!!!!!!!','get_parser', obj, parser),)
     p = parser or ArgumentParser()
     o = obj or self.tree
-    sps = None
-    for name, opts in o.get('_options', {}).items():
+    inspect(o)
+
+    ############# add --options ###########
+    options = o.get('_options', {})
+    for opt_name, opt_params in options.items():
+      debug({'opt_name': opt_name, 'opt_params': opt_params})
       args, kwargs = [], {}
-      if short := self.get_short_opt(name):
+      if short := self.get_short_opt(opt_name):
         args.append(f'-{short}')
-      args.append(f'--{name}')
-      kwargs.update(opts)
+      args.append(f'--{opt_name}')
+      kwargs.update(opt_params)
+      debug({
+        'p':p,
+        'args':args,
+        'kwargs':kwargs
+      })
       p.add_argument(*args, **kwargs)
+
+    ############# add subcommands ############
+    sps = None
     for sub_name, sub_obj in o.items():
-      debug(f'XX {sub_name}')
       if not sub_name.startswith('_'):
-        info(f'YY {sub_name}')
         if isinstance(sub_obj, dict):
+          info(f'--- I think we are descending into {sub_name} - {sub_obj}')
           if not sps: sps = p.add_subparsers()
           sub_kwargs = sub_obj.get('_command', {})
-          # sub_kwargs.setdefault('title', sub_name)
-          # sub_kwargs.setdefault('dest', sub_name)
           sub_parser = sps.add_parser(sub_name, **sub_kwargs)
           sub_menu = self.get_parser(sub_obj, sub_parser)
-
-          
-
-
     return p
 
   def parse_args(self, params=None):

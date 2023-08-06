@@ -28,11 +28,12 @@ for arg in sys.argv:
 
 class Dot(Configured, Git):
 
-  @property
-  def run(self): return Runtime(self)
-  
-  @property
-  def install(self): return Install(self)
+  # @property
+  # def run(self): return Runtime(self)
+  # @property
+  # def install(self): return Install(self)
+  run = property(lambda self: Runtime(self))
+  install = property(lambda self: Install(self))
     
   def __init__(self, path=None, params=None):
     self.params = params

@@ -1,6 +1,29 @@
-from logging import debug, info, warning, error, critical
+from logging import (
+    debug, info, warning, error, critical,
+    WARN, DEBUG, getLogger, StreamHandler
+)
 
 PROGNAME='dotctl'
+
+
+################################## inspect #########
+from logging import DEBUG, getLogger
+from pprint import pformat, isreadable
+def inspect(obj, label=None, level=DEBUG, **fmtargs):
+  obj_id = f'{type(obj).__name__}(#{id(obj)})'
+  output = (label or '') + f'\n\t\x1b[35m▞ ▞ \x1b[36m{obj_id})'
+  pfargs = {
+  #  'indent': 4,
+  #  'depth': None,
+  #  'width': 10,
+  }
+  pfargs.update(fmtargs)
+  obj_out = pformat(obj, **pfargs)
+  output = f'{output}\n' + '\n'.join([ 
+    f'\t\x1b[35m▙▝\t\x1b[36m{line}\x1b[0m'
+    for line in obj_out.splitlines() 
+  ])
+  getLogger().log(level=level, msg=output)
 
 
 # executes `command` and returns output on success, or False on error
@@ -66,3 +89,8 @@ def backup_file(filename):
       return bkf
   debug(f'backup: {filename} -> {bkf}')
   return file.rename(bkf)
+
+
+#### format_traceback #####
+def format_traceback():
+  pass
