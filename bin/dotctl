@@ -3,4 +3,5 @@ from sys import path
 from pathlib import Path
 path.append(str(Path(__file__).parent.parent / 'lib'))
 from dot.dot import Dot
-if __name__ == '__main__': Dot().main()
+if __name__ == '__main__':
+    Dot().main()
