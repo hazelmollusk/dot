@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from subprocess import run, PIPE, DEVNULL
 from pprint import pformat
-from logging import DEBUG, getLogger, info, debug
+from logging import DEBUG, getLogger, info, debug, warning
 
 
 def inspect(obj, label=None, level=DEBUG, **fmtargs):
@@ -40,9 +40,9 @@ def curses_screen():
     try:
         screen = curses.initscr()
         curses.curs_set(False)  # | no cursor            |#
-        curses.noecho()  # | silence keystrokes   |#
-        curses.cbreak()  # | unbuffered input     |#
-        screen.keypad(True)  # | handle special keys  |#
+        curses.noecho()  # |      | silence keystrokes   |#
+        curses.cbreak()  # |      | unbuffered input     |#
+        screen.keypad(True)  # |  | handle special keys  |#
         yield screen
     finally:
         curses.curs_set(True)
@@ -52,18 +52,15 @@ def curses_screen():
         curses.endwin()
 
 
-########## helpful for debugging curses #######
 def ouch(*args, **kwargs):
     raise RuntimeError(*[repr(arg) for arg in args], repr(kwargs))
 
 
-################### md5 file_hash ###############
 def file_hash(file):
     from hashlib import md5
     return md5(open(file, 'rb').read()).hexdigest()
 
 
-########################### backup_file #####################
 def backup_file(filename):
     from pathlib import Path
     file = Path(filename).expanduser()

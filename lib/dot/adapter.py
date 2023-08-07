@@ -1,21 +1,22 @@
-import sys
-import os
-import subprocess
-import re
-import logging
-import curses
-from pathlib import Path
-from logging import debug, info, warning, error, critical
-from argparse import ArgumentParser
-from contextlib import chdir, contextmanager
-from hashlib import md5
+# import sys
+# import os
+# import subprocess
+# import re
+# import logging
+# import curses
+# from pathlib import Path
+from logging import debug, info, warning  # , error, critical
+# from argparse import ArgumentParser
+# from contextlib import chdir, contextmanager
+# from hashlib import md5
 
-from .rooted import Rooted
-from .util import command_output, file_hash
+# from .rooted import Rooted
+# from .util import command_output, file_hash
 from .configured import Configured
+from .tree import Tree
 
 
-class Adapter(Configured):
+class Adapter(Configured, Tree):
 
     def __init__(self, dot):
         self.dot = dot
@@ -59,7 +60,7 @@ class Adapter(Configured):
             if dst.samefile(src):
                 debug(f'install: {self.name}/{link} already installed')
                 return True
-            debug(f'install: destination link .{link} exists')
             bkup = self.backup_file(dst)
+            debug(f'install: .{link} backed up to {bkup}')
         info(f'install: linking {dst} to {src}')
         dst.symlink_to(src)

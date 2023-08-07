@@ -19,11 +19,11 @@ class Rooted:
     @path.setter
     def path(self, path):
         if isinstance(path, str):
-            self._path = Path(path)
+            self._path = Path(path).expanduser()
         elif isinstance(path, Path):
             self._path = path
         elif path is None:
             self._path = None
         else:
-            raise RuntimeWarning(
-                f'{type(self)}: cannot assign path to {type(path)}: {path}')
+            err = f'{type(self)}: invalid path {path}'
+            raise RuntimeWarning(err)
